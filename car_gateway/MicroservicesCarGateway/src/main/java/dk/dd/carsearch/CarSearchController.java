@@ -1,11 +1,9 @@
 package dk.dd.carsearch;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.websocket.server.PathParam;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -14,10 +12,35 @@ import java.util.stream.Collectors;
 public class CarSearchController
 {
     private CarSearchClient carClient = null;
+    private UserSearchClient userClient = null;
 
-    public CarSearchController(CarSearchClient carClient)
+    public CarSearchController(CarSearchClient carClient, UserSearchClient userClient)
     {
         this.carClient = carClient;
+        this.userClient = userClient;
+    }
+
+    @GetMapping("/rating")
+    @ResponseBody
+    @CrossOrigin(origins = "*") // allow request from any client
+    @HystrixCommand(fallbackMethod = "fallbackUser") // in case of failure
+    public Collection<User> ratingCars()
+    {
+        return userClient.readUsers()
+                .getContent()
+                .stream()
+                //.filter(user -> user.getCar_id() == 1)
+                .collect(Collectors.toList());
+    }
+
+//    private boolean isUser(User user)
+//    {
+//        return user.getCar_id() == 1;
+//    }
+
+    private Collection<User> fallbackUser()
+    {
+        return new ArrayList<>();
     }
 
     @GetMapping("/mycars")
